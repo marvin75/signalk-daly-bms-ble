@@ -216,9 +216,20 @@ module.exports = function(app) {
         const [sensor, temperature]
         of Object.entries(data.temperatures || {})
       ) {
+        const temperaturePath =
+          `${base}.temperatures.${sensor}`;
+
+        app.setDefaultMetadata(
+          temperaturePath,
+          {
+            units: 'K',
+            description: `Battery temperature sensor ${sensor}`
+          }
+        );
+
         value(
           values,
-          `${base}.temperatures.${sensor}`,
+          temperaturePath,
           temperature + 273.15
         );
       }
@@ -502,7 +513,7 @@ module.exports = function(app) {
     }
   }
 
-  plugin.start = function(settings) {
+  plugin.start = async function(settings) {
     running = true;
     workers = [];
 
@@ -549,6 +560,25 @@ module.exports = function(app) {
 
       seenDevices.add(deviceKey);
       seenIds.add(idKey);
+
+      const base =
+        `electrical.batteries.${idKey}`;
+
+      await app.setDefaultMetadata(
+        `${base}.bms.maximumTemperature`,
+        {
+          units: 'K',
+          description: 'Maximum BMS temperature'
+        }
+      );
+
+      await app.setDefaultMetadata(
+        `${base}.bms.minimumTemperature`,
+        {
+          units: 'K',
+          description: 'Minimum BMS temperature'
+        }
+      );
 
       const worker = {
         config: {
